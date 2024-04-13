@@ -5,70 +5,56 @@ const router = require("../routes/routes")
 const AlunoController = {
 
     getAll: async (req, res) => {
-
-        const campos = Object.keys(Aluno.schema.paths)
-
-        const filtros = {}
-
-        for (let campo in req.query) {
-            if (campos.includes(campo)) {
-                filtros[campo] = { regex: new RegExp(req.query[campo], 'i') }
-            }
-        }
-        res.json(await Aluno.find(filtros))
-
+        res.json(await Aluno.find())
     },
-
-    get: async (req, res) => {
-        try {
-            const Aluno = await Aluno.findById(req.params.id);
-            if (!Aluno) {
-                res.status(404).json({ error: 'Aluno não encontrado' });
-                return;
-            }
-            res.json(Aluno);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-
+    getAprovados: async (req, res) => {
+        res.json(await Aluno.find({ media: { $gte: 7 } }))
+    },
+    getReprovados: async (req, res) => {
+        res.json(await Aluno.find({ media: { $lt: 5 } }))
+    },
+    getRecuperacao: async (req, res) => {
+        res.json(await Aluno.find({ media: { $gte: 5, $lt: 7 } }))
     },
 
     create: async (req, res) => {
         try {
-            const aluno = await Aluno.create(req.body);
-            if (!aluno) {
-                res.status(400).json({ error: 'Aluno não encontrado' });
-                return;
+
+            let soma = 0
+            const notas = req.body.notas
+            const alunos = req.body
+
+            for (let n of notas) {
+                if (n < 0 || n > 10) {
+                    return res.status(400).json({
+                        message: 'Não pode haver nota menor que 0 ou maior que 10'
+                    })
+                }
+                soma += n
             }
-            res.json(aluno);
+
+            const media = soma / notas.length
+            alunos.media = media
+
+            res.json(await Aluno.create(alunos));
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            res.status(400).json({ error: error.message });
         }
     },
 
     update: async (req, res) => {
         try {
-            const aluno = await Aluno.findByIdAndUpdate(req.params.id, req.body);
-            if (!aluno) {
-                res.status(404).json({ error: 'Aluno não encontrado' });
-                return;
-            }
-            res.json(Aluno);
+            res.json(await Aluno.updateMany({ turma: "E" }, { turma: "B" }))
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            res.status(404).json({ error: 'Registro não encontrado' })
         }
     },
 
     delete: async (req, res) => {
         try {
-            const aluno = await Aluno.findByIdAndDelete(req.params.id);
-            if (!aluno) {
-                res.status(404).json({ error: 'Aluno não encontrado' });
-                return;
-            }
-            res.json(aluno);
+            res.json(await Aluno.deleteMany({ nome: "Teste" }))
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            res.status(404).json({ error: 'Registro não encontrado' })
         }
     },
 }
